@@ -12,13 +12,14 @@ from tkinter import messagebox
 class ClientInterface:
 
 
-    def __init__(self, args, comm_factory: CommunicationFactory, banking_server: BankingServer, lamport_clock: LamportClock, pqueue: PriorityQueue, balance_table: BalanceTable, block_chain: BlockChain):
+    def __init__(self, args, comm_factory: CommunicationFactory, banking_server: BankingServer, lamport_clock: LamportClock, pqueue: PriorityQueue, dictionary: BalanceTable, block_chain: BlockChain):
         self.args = args
         self.comm_factory = comm_factory
         self.banking_server = banking_server
         self.lamport_clock = lamport_clock
         self.pqueue = pqueue
-        self.balance_table = balance_table
+        # self.balance_table = balance_table
+        self.dictionary = dictionary
         self.block_chain = block_chain
 
         self.root = tk.Tk()
@@ -26,7 +27,7 @@ class ClientInterface:
         self.root.geometry("400x300")
 
         self.balance_var = tk.StringVar()
-        self.balance_var.set(f"Balance: ${balance_table[lamport_clock.proc_id]}")
+        self.balance_var.set(f"Balance: ${self.dictionary}")
         balance_label = tk.Label(self.root, textvariable=self.balance_var)
         balance_label.pack(pady=10)
 
@@ -54,7 +55,7 @@ class ClientInterface:
                 raise Exception("Attempt to perform self transfer")
             amount = self.amount_entry.get()
             amount = float(amount)
-            self.banking_server.transcation(self.lamport_clock, self.pqueue, self.balance_table, self.block_chain, receiver, amount, self.comm_factory)
+            self.banking_server.transcation(self.lamport_clock, self.pqueue, self.dictionary, self.block_chain, receiver, amount, self.comm_factory)
             messagebox.showinfo("Success", "Transaction SUCCESS!")
             self.update_balance()
         except ValueError:
@@ -65,17 +66,17 @@ class ClientInterface:
             messagebox.showerror("Error", str(e))
 
     def check_balance(self):
-        balance = self.banking_server.balance_request(self.args.client, self.balance_table)
+        balance = self.banking_server.balance_request(self.args.client, self.dictionary)
         messagebox.showinfo("Balance", f"Current Balance: ${balance}")
 
     def show_blockchain(self):
         messagebox.showinfo("Blockchain", str(self.block_chain))
 
     def show_balance_table(self):
-        messagebox.showinfo("Balance Table", str(self.balance_table))
+        messagebox.showinfo("Balance Table", str(self.dictionary))
 
     def update_balance(self):
-        self.balance_var.set(f"Balance: ${self.balance_table[self.lamport_clock.proc_id]}")
+        self.balance_var.set(f"Balance: ${self.dictionary}")
 
     # def client_interface(args, comm_factory: CommunicationFactory, banking_server: BankingServer, lamport_clock: LamportClock, pqueue: PriorityQueue, balance_table: BalanceTable, block_chain: BlockChain):
 

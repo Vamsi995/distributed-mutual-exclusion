@@ -4,7 +4,7 @@ import threading
 from logical_clock import LamportClock
 from priority_queue import PriorityQueue
 from blockchain import BlockChain
-from balance_table import BalanceTable
+from balance_table import BalanceTable, Dictionary
 from banking_server import BankingServer
 from communication_factory import CommunicationFactory
 from interface import ClientInterface
@@ -16,10 +16,11 @@ def run_server(args):
     lamport_clock = LamportClock(args.client)
     block_chain = BlockChain()
     balance_table = BalanceTable(args.balance)
+    dictionary = Dictionary()
     pqueue = PriorityQueue([])
     banking_server = BankingServer()
     comm_factory = CommunicationFactory()
-    client_interface = ClientInterface(args, comm_factory, banking_server, lamport_clock, pqueue, balance_table, block_chain)
+    client_interface = ClientInterface(args, comm_factory, banking_server, lamport_clock, pqueue, dictionary, block_chain)
     limit = 2
 
 
@@ -29,7 +30,7 @@ def run_server(args):
 
     print("Connected with {}".format(clientsocket.getpeername()))
 
-    thread = threading.Thread(target=comm_factory.handle, args=(clientsocket, pqueue, block_chain, balance_table, comm_factory, lamport_clock, client_interface))
+    thread = threading.Thread(target=comm_factory.handle, args=(clientsocket, pqueue, block_chain, dictionary, comm_factory, lamport_clock, client_interface))
     thread.start()
     
 
@@ -39,7 +40,7 @@ def run_server(args):
     server.listen()
     print("Listening on port: {}".format(port))
 
-    comm_factory.receive(server, pqueue, block_chain, balance_table, limit, lamport_clock, client_interface)
+    comm_factory.receive(server, pqueue, block_chain, dictionary, limit, lamport_clock, client_interface)
 
     client_interface.start()
     

@@ -43,3 +43,11 @@ class Block:
     
     def __repr__(self):
         return f"|Client<{self.sender}> pays Client<{self.receiver}> ${self.amount}| -> {self.next}"
+    
+
+
+class InsertOperation:
+
+    def __init__(self, id, grade):
+        self.id = id
+        self.grade = grade 
