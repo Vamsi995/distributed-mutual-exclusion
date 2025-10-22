@@ -33,5 +33,5 @@ class Dictionary:
         self.dictionary[index] = value 
 
     def __repr__(self):
-        return f"""Dictionary: {self.dictionary}"""
+        return f"""{self.dictionary}"""
     

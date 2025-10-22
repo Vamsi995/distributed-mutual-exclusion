@@ -42,7 +42,8 @@ def run_server(args):
 
     comm_factory.receive(server, pqueue, block_chain, dictionary, limit, lamport_clock, client_interface)
 
-    client_interface.start()
+    # client_interface.start()
+
     
 
     

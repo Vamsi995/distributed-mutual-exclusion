@@ -51,3 +51,30 @@ class InsertOperation:
     def __init__(self, id, grade):
         self.id = id
         self.grade = grade 
+
+class LookupOperation:
+
+    def __init__(self, id):
+        self.id = id
+
+
+class InsertOutput:
+
+    def __init__(self, id, grade, client_id):
+        self.id = id
+        self.grade = grade
+        self.client_id = client_id
+    
+    def __str__(self):
+        return f"SUCCESS <insert {self.id} {self.grade} {self.client_id}>"
+
+
+class LookupOutput:
+
+    def __init__(self, id, grade):
+        self.id = id
+        self.grade = grade
+
+    
+    def __str__(self):
+        return f"LOOKUP <{self.id} {self.grade}>"

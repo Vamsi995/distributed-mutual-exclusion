@@ -39,7 +39,15 @@ def run_server(args):
     thread = threading.Thread(target=comm_factory.handle, args=(clientsocket2, pqueue, block_chain, dictionary, comm_factory, lamport_clock, client_interface))
     thread.start()
 
-    client_interface.start()
+     # Starting Server
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((host, port))
+    server.listen()
+    print("Listening on port: {}".format(port))
+
+    limit = 1
+    comm_factory.receive(server, pqueue, block_chain, dictionary, limit, lamport_clock, client_interface)
+    # client_interface.start()
     
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(message)s')

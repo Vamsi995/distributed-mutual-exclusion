@@ -31,7 +31,7 @@ def run_server(args):
     print("Listening on port: {}".format(port))
 
     comm_factory.receive(server, pqueue, block_chain, dictionary, limit, lamport_clock, client_interface)
-    client_interface.start()
+    # client_interface.start()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(message)s')

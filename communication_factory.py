@@ -1,6 +1,6 @@
 from __future__ import annotations
 import threading
-from blockchain import Block, BlockChain, InsertOperation
+from blockchain import Block, BlockChain, InsertOperation, LookupOperation, LookupOutput, InsertOutput
 from balance_table import BalanceTable, Dictionary
 from priority_queue import PriorityQueue
 from utils import txt_to_object, object_to_txt
@@ -13,14 +13,62 @@ class CommunicationFactory:
     REPLIES = []
     CLIENTS = []
     SUCCESS = []
+    MASTER = None
 
 
     def broadcast(self, message, lamport_clock: LamportClock, message_type: str):
-        time.sleep(3)
         for client in self.CLIENTS:
             client.send(bytes(message, "utf-8"))
         
         logging.info(f"[Event - Broadcast - {message_type}] - [Clock - {lamport_clock.logical_time}] - [Sent from Client {lamport_clock.proc_id}]")
+
+    def send_to_master(self, client, message, lamport_clock: LamportClock, message_type: str):
+        client.send(bytes(message, "utf-8"))
+        logging.info(f"[Event - Master - {message_type}] - [Clock - {lamport_clock.logical_time}] - [Sent from Client {lamport_clock.proc_id}]")
+
+    def master_handle(self, client, comm_factory, args):
+
+        def write_to_file(message):
+
+            with open(f'{args.outputfile}', 'a') as file:
+                file.write(f'{str(message)}\n')
+
+
+        while True:
+            try:
+                # Broadcasting Messages
+                message = client.recv(4096).decode("utf-8")
+                message, piggy_back_obj = message.split("|")
+
+                if message == "INSERT_SUCCESS":
+                    piggy_back_clock, piggy_back_op = piggy_back_obj.split("#")
+                    attached_clock = txt_to_object(piggy_back_clock)
+                    insert_output = txt_to_object(piggy_back_op)
+                    write_to_file(insert_output)
+                    logging.info(f"[Event - INSERT_SUCCESS] - [Clock - {attached_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
+                
+                elif message == "LOOKUP_SUCCESS":
+                    piggy_back_clock, piggy_back_op = piggy_back_obj.split("#")
+                    attached_clock = txt_to_object(piggy_back_clock)
+                    lookup_output = txt_to_object(piggy_back_op)
+                    write_to_file(lookup_output)
+                    logging.info(f"[Event - LOOKUP_SUCCESS] - [Clock - {attached_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
+
+                elif message == "DICTIONARY_SUCCESS":
+                    piggy_back_clock, piggy_back_op = piggy_back_obj.split("#")
+                    attached_clock = txt_to_object(piggy_back_clock)
+                    dictionary = txt_to_object(piggy_back_op)
+                    write_to_file(dictionary)
+                    logging.info(f"[Event - DICTIONARY] - [Clock - {attached_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
+
+
+
+            except Exception as e:
+                print(e)
+                # Removing And Closing Clients
+                comm_factory.CLIENTS.remove(client)
+                client.close()
+                break
 
 
     def receive(self, server, pqueue: PriorityQueue, block_chain: BlockChain, dictionary: Dictionary, client_limit, lamport_clock, client_interface):
@@ -28,14 +76,21 @@ class CommunicationFactory:
             # Accept Connection
             client, address = server.accept()
             print("Connected with {}".format(client.getpeername()))
+
+            if len(self.CLIENTS) == client_limit:
+                if self.MASTER == None:
+                    self.MASTER = client
+                    thread = threading.Thread(target=self.handle, args=(client, pqueue, block_chain, dictionary, self, lamport_clock, client_interface))
+                    thread.start()
+                    continue
+
             self.CLIENTS.append(client)
 
             # Start Handling Thread For Client
             thread = threading.Thread(target=self.handle, args=(client, pqueue, block_chain, dictionary, self, lamport_clock, client_interface))
             thread.start()
 
-            if len(self.CLIENTS) == client_limit:
-                break
+
 
 
     def handle(self, client, pqueue: PriorityQueue, block_chain: BlockChain, dictionary: Dictionary, comm_factory: CommunicationFactory, lamport_clock: LamportClock, client_interface):
@@ -71,7 +126,7 @@ class CommunicationFactory:
                     # lamport_clock.update_clock(attached_clock.logical_time)
                     pqueue.delete(attached_clock.proc_id)
                     logging.info(f"[Event - RELEASE] - [Clock - {lamport_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
-                    client_interface.update_balance()
+                    # client_interface.update_balance()
 
                 elif message == "BLOCK":
                     piggy_back_clock, piggy_back_block = piggy_back_obj.split("#")
@@ -100,8 +155,25 @@ class CommunicationFactory:
                     logging.info(f"[Event - SUCCESS] - [Clock - {lamport_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
                     comm_factory.SUCCESS.append(client)
 
+                elif message == "INSERT_OP":
+                    insert_op = txt_to_object(piggy_back_obj)
+                    client_interface.banking_server.transcation(lamport_clock, pqueue, dictionary, block_chain, insert_op.id, insert_op.grade, comm_factory)
+                    message = "INSERT_SUCCESS" + "|" + object_to_txt(lamport_clock) + "#" + object_to_txt(InsertOutput(insert_op.id, insert_op.grade, lamport_clock.proc_id))
+                    self.send_to_master(client, message, lamport_clock, "INSERT_SUCCESS")
+                
+                elif message == "LOOKUP_OP":
+                    lookup_op = txt_to_object(piggy_back_obj)
+                    grade = dictionary[lookup_op.id]
+                    # "BLOCK" + "|" + object_to_txt(lamport_clock) + "#" + object_to_txt(block), lamport_clock, "BLOCK"
+                    message = "LOOKUP_SUCCESS" + "|" + object_to_txt(lamport_clock) + "#" + object_to_txt(LookupOutput(lookup_op.id, grade))
+                    self.send_to_master(client, message, lamport_clock, "LOOKUP_SUCCESS")
+                
 
-                    
+                elif message == "DICTIONARY_OP":
+                    # "BLOCK" + "|" + object_to_txt(lamport_clock) + "#" + object_to_txt(block), lamport_clock, "BLOCK"
+                    message = "DICTIONARY_SUCCESS" + "|" + object_to_txt(lamport_clock) + "#" + object_to_txt(dictionary)
+                    self.send_to_master(client, message, lamport_clock, "DICTIONARY_SUCCESS")
+
             except Exception as e:
                 print(e)
                 # Removing And Closing Clients
