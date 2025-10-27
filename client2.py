@@ -21,7 +21,7 @@ def run_server(args):
     banking_server = BankingServer()
     comm_factory = CommunicationFactory()
     client_interface = ClientInterface(args, comm_factory, banking_server, lamport_clock, pqueue, dictionary, block_chain)
-    limit = 2
+    limit = 1
 
 
     clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,7 +42,7 @@ def run_server(args):
 
     comm_factory.receive(server, pqueue, block_chain, dictionary, limit, lamport_clock, client_interface)
 
-    # client_interface.start()
+    client_interface.start()
 
     
 

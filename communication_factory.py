@@ -72,23 +72,34 @@ class CommunicationFactory:
 
 
     def receive(self, server, pqueue: PriorityQueue, block_chain: BlockChain, dictionary: Dictionary, client_limit, lamport_clock, client_interface):
+        curr_clients = []
+
         while True:
             # Accept Connection
             client, address = server.accept()
             print("Connected with {}".format(client.getpeername()))
 
-            if len(self.CLIENTS) == client_limit:
-                if self.MASTER == None:
-                    self.MASTER = client
-                    thread = threading.Thread(target=self.handle, args=(client, pqueue, block_chain, dictionary, self, lamport_clock, client_interface))
-                    thread.start()
-                    continue
+            # if len(self.CLIENTS) == client_limit:
+            #     if self.MASTER == None:
+            #         self.MASTER = client
+            #         thread = threading.Thread(target=self.handle, args=(client, pqueue, block_chain, dictionary, self, lamport_clock, client_interface))
+            #         thread.start()
+            #         # continue
+            #         break
 
             self.CLIENTS.append(client)
-
+            curr_clients.append(client)
             # Start Handling Thread For Client
-            thread = threading.Thread(target=self.handle, args=(client, pqueue, block_chain, dictionary, self, lamport_clock, client_interface))
-            thread.start()
+            if len(curr_clients) - 1 == client_limit:
+                    self.MASTER = self.CLIENTS.pop()
+                    thread = threading.Thread(target=self.handle, args=(client, pqueue, block_chain, dictionary, self, lamport_clock, client_interface))
+                    thread.start()
+                    break
+            else:
+                thread = threading.Thread(target=self.handle, args=(client, pqueue, block_chain, dictionary, self, lamport_clock, client_interface))
+                thread.start()
+
+
 
 
 
@@ -126,7 +137,7 @@ class CommunicationFactory:
                     # lamport_clock.update_clock(attached_clock.logical_time)
                     pqueue.delete(attached_clock.proc_id)
                     logging.info(f"[Event - RELEASE] - [Clock - {lamport_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
-                    # client_interface.update_balance()
+                    client_interface.update_balance()
 
                 elif message == "BLOCK":
                     piggy_back_clock, piggy_back_block = piggy_back_obj.split("#")
@@ -154,6 +165,7 @@ class CommunicationFactory:
                     attached_clock = txt_to_object(piggy_back_obj)
                     logging.info(f"[Event - SUCCESS] - [Clock - {lamport_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
                     comm_factory.SUCCESS.append(client)
+                    client_interface.update_balance()
 
                 elif message == "INSERT_OP":
                     insert_op = txt_to_object(piggy_back_obj)

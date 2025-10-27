@@ -9,7 +9,7 @@ import time
 class BankingServer:
 
 
-    def transcation(self, lamport_clock: LamportClock, queue: PriorityQueue, dictionary: Dictionary, block_chain: BlockChain, receiver: str, amount: float, comm_factory):
+    def transcation(self, lamport_clock: LamportClock, queue: PriorityQueue, dictionary: Dictionary, block_chain: BlockChain, receiver: str, amount: float, comm_factory, client_interface=None):
         
         print(f"Current Balance: {self.balance_request(lamport_clock.proc_id, dictionary)}")
 
@@ -57,8 +57,10 @@ class BankingServer:
 
             # lamport_clock()
             # send release to all
-            comm_factory.broadcast("RELEASE" + "|" + object_to_txt(lamport_clock), lamport_clock, "RELEASE")
 
+            comm_factory.broadcast("RELEASE" + "|" + object_to_txt(lamport_clock), lamport_clock, "RELEASE")
+            if client_interface != None:
+                client_interface.update_balance()
             if len(comm_factory.CLIENTS) < 2:
                 raise Exception("Disconnected from client")
 
