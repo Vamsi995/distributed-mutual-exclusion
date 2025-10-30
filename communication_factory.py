@@ -115,6 +115,7 @@ class CommunicationFactory:
 
 
                 elif message == "REPLY":
+                    time.sleep(3)
                     attached_clock = txt_to_object(piggy_back_obj)
                     comm_factory.REPLIES.append(client)
                     # lamport_clock.update_clock(attached_clock.logical_time)
@@ -122,6 +123,7 @@ class CommunicationFactory:
 
 
                 elif message == "RELEASE":
+                    time.sleep(3)
                     attached_clock = txt_to_object(piggy_back_obj)
                     # lamport_clock.update_clock(attached_clock.logical_time)
                     pqueue.delete(attached_clock.proc_id)
@@ -139,6 +141,7 @@ class CommunicationFactory:
                     logging.info(f"[Event - BLOCK] - [Clock - {lamport_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
 
                 elif message == "INSERT":
+                    time.sleep(3)
                     piggy_back_clock, piggy_back_op = piggy_back_obj.split("#")
                     attached_clock = txt_to_object(piggy_back_clock)
                     insert_operation: InsertOperation = txt_to_object(piggy_back_op)
@@ -151,6 +154,7 @@ class CommunicationFactory:
 
                     
                 elif message == "SUCCESS":
+                    time.sleep(3)
                     attached_clock = txt_to_object(piggy_back_obj)
                     logging.info(f"[Event - SUCCESS] - [Clock - {lamport_clock.logical_time}] - [Received from Client {attached_clock.proc_id}]")
                     comm_factory.SUCCESS.append(client)
