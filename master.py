@@ -53,7 +53,7 @@ def run_server(args):
 
         for line in lines:
     
-            out = line.split(" ")
+            out = line.strip().split(" ")
 
             if len(out) == 4:
                 operation, perm, grade, client_id = out

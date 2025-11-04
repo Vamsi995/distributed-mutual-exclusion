@@ -1,0 +1,3 @@
+SUCCESS <insert 3 A None>
+LOOKUP <3 A>
+{'3': 'A'}
